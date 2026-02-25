@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    container_name: suvidha_db
+    environment:
+      POSTGRES_USER: suvidha
+      POSTGRES_PASSWORD: suvidha
+      POSTGRES_DB: suvidha_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations:/migrations
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U suvidha -d suvidha_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build: ./backend
+    container_name: suvidha_backend
+    environment:
+      PORT: 5000
+      DATABASE_URL: postgresql://suvidha:suvidha@suvidha_db:5432/suvidha_db
+      JWT_SECRET: supersecretkey
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+
+volumes:
+  pgdata:

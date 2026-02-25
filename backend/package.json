@@ -1,0 +1,25 @@
+{
+  "name": "suvidha-backend",
+  "version": "1.0.0",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pdfkit": "^0.15.0",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.2.0",
+    "pino": "^9.3.1",
+    "pino-http": "^9.0.0",
+    "zod": "^3.23.8",
+    "swagger-ui-express": "^5.0.0"
+  }
+}
