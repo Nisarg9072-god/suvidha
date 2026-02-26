@@ -20,10 +20,15 @@ services:
   backend:
     build: ./backend
     container_name: suvidha_backend
+    env_file:
+      - ./backend/.env
     environment:
       PORT: 5000
       DATABASE_URL: postgresql://suvidha:suvidha@suvidha_db:5432/suvidha_db
       JWT_SECRET: supersecretkey
+      DEMO_OTP: "true"
+      SMS_PROVIDER: "mock"
+      NODE_ENV: development
     ports:
       - "5000:5000"
     depends_on:

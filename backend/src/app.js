@@ -9,7 +9,7 @@ const streamRoutes = require("./routes/stream.routes");
 const uploadsRoutes = require("./routes/uploads.routes");
 const paymentsRoutes = require("./routes/payments.routes");
 const helmet = require("helmet");
-// const httpLogger = require("./middleware/logging");
+const httpLogger = require("./middleware/logging");
 const { globalLimiter } = require("./middleware/rateLimit");
 const demoRoutes = require("./routes/demo.routes");
 const departmentsRoutes = require("./routes/departments.routes");
@@ -33,6 +33,7 @@ const swaggerSpec = require("./docs/swagger");
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(httpLogger);
 app.use(helmet());
 app.use(globalLimiter);
 

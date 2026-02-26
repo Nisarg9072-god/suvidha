@@ -27,23 +27,24 @@ module.exports = {
       // ---- Auth ----
       RequestOtpBody: {
         type: "object",
-        required: ["phone"],
+        required: ["mobile"],
         properties: {
-          phone: { type: "string", example: "9000000001" }
+          mobile: { type: "string", example: "9999999999" }
         }
       },
       RequestOtpResponse: {
         type: "object",
         properties: {
-          message: { type: "string", example: "OTP sent (mock)" },
+          ok: { type: "boolean", example: true },
+          message: { type: "string", example: "OTP sent successfully" },
           otp: { type: "string", example: "123456" }
         }
       },
       VerifyOtpBody: {
         type: "object",
-        required: ["phone", "otp"],
+        required: ["mobile", "otp"],
         properties: {
-          phone: { type: "string", example: "9000000001" },
+          mobile: { type: "string", example: "9999999999" },
           otp: { type: "string", example: "123456" }
         }
       },
@@ -158,9 +159,9 @@ module.exports = {
     },
 
     // ---------- Auth ----------
-    "/auth/request-otp": {
+    "/auth/otp/request": {
       post: {
-        summary: "Request OTP (mock)",
+        summary: "Request OTP",
         requestBody: {
           required: true,
           content: {
@@ -171,19 +172,20 @@ module.exports = {
         },
         responses: {
           200: {
-            description: "OTP issued (mock)",
+            description: "OTP issued",
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/RequestOtpResponse" }
               }
             }
           },
-          400: { description: "Bad request", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } }
+          400: { description: "Bad request", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
+          429: { description: "Too many requests" }
         }
       }
     },
 
-    "/auth/verify-otp": {
+    "/auth/otp/verify": {
       post: {
         summary: "Verify OTP and get JWT",
         requestBody: {
@@ -203,9 +205,48 @@ module.exports = {
               }
             }
           },
-          401: { description: "Invalid OTP", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } }
+          400: { description: "Invalid OTP/Expired", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
+          401: { description: "Wrong OTP" },
+          410: { description: "OTP Expired" },
+          429: { description: "Too many attempts" }
         }
       }
+    },
+
+    "/auth/request-otp": {
+      post: {
+        summary: "Request OTP (Alias)",
+        deprecated: true,
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/RequestOtpBody" }
+            }
+          }
+        },
+        responses: {
+          200: { description: "OK" }
+        }
+      }
+    },
+
+    "/auth/verify-otp": {
+       post: {
+         summary: "Verify OTP (Alias)",
+         deprecated: true,
+         requestBody: {
+           required: true,
+           content: {
+             "application/json": {
+               schema: { $ref: "#/components/schemas/VerifyOtpBody" }
+             }
+           }
+         },
+         responses: {
+           200: { description: "OK" }
+         }
+       }
     },
 
     // ---------- Tickets ----------

@@ -32,6 +32,27 @@ function computeSlaDueAt(priority = "MED") {
   return new Date(now.getTime() + hours * 60 * 60 * 1000);
 }
 
+function judgePriority(title, description) {
+  const text = `${title} ${description}`.toLowerCase();
+  
+  // Emergency keywords
+  if (text.includes("fire") || text.includes("explosion") || text.includes("gas leak") || text.includes("short circuit") || text.includes("danger")) {
+    return "EMERGENCY";
+  }
+  
+  // High priority keywords
+  if (text.includes("outage") || text.includes("no power") || text.includes("broken pipe") || text.includes("urgent") || text.includes("hospital") || text.includes("clinic")) {
+    return "HIGH";
+  }
+  
+  // Low priority keywords
+  if (text.includes("garbage") || text.includes("street light") || text.includes("cleaning") || text.includes("park") || text.includes("maintenance")) {
+    return "LOW";
+  }
+  
+  return "MED";
+}
+
 router.post("/", requireAuth, validate(createTicketSchema), async (req, res, next) => {
   try {
     const { title, description, departmentCode, serviceType, priority, area, latitude, longitude } = req.body;
@@ -43,7 +64,7 @@ router.post("/", requireAuth, validate(createTicketSchema), async (req, res, nex
       departmentId = d.rows[0].id;
     }
 
-    const pri = priority || "MED";
+    const pri = priority || judgePriority(title, description);
     const isEmergency = pri === "EMERGENCY";
     const slaDueAt = computeSlaDueAt(pri);
 
@@ -77,6 +98,32 @@ router.get("/", requireAuth, async (req, res) => {
     [req.user.id]
   );
   res.json({ ok: true, tickets: r.rows });
+});
+
+router.get("/:id", requireAuth, async (req, res, next) => {
+  try {
+    const ticketId = req.params.id;
+    const isNumeric = /^\d+$/.test(ticketId);
+    
+    let query = `
+      SELECT t.*, d.name as department_name, d.code as department_code 
+      FROM tickets t 
+      LEFT JOIN departments d ON d.id = t.department_id 
+      WHERE t.user_id=$1 AND `;
+    
+    if (isNumeric) {
+      query += `t.id=$2`;
+    } else {
+      query += `t.id::text=$2`;
+    }
+
+    const r = await pool.query(query, [req.user.id, ticketId]);
+    
+    if (r.rowCount === 0) return res.status(404).json({ error: "Ticket not found" });
+    res.json({ ok: true, ticket: r.rows[0] });
+  } catch (e) {
+    next(e);
+  }
 });
 
 module.exports = router;

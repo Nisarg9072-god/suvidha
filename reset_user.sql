@@ -1,0 +1,2 @@
+DELETE FROM users WHERE phone = '+919537266092';
+DELETE FROM otps WHERE mobile = '+919537266092';

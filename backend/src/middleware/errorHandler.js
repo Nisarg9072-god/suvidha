@@ -6,7 +6,9 @@ module.exports = function errorHandler(err, req, res, next) {
   if (err.code === "LIMIT_FILE_SIZE") {
     return res.status(400).json({ error: "File too large (max 5MB)" });
   }
-  return res.status(500).json({
-    error: "InternalServerError"
+  
+  const status = err.statusCode || err.status || 500;
+  return res.status(status).json({
+    error: err.message || "InternalServerError"
   });
 };

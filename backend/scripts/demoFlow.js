@@ -48,7 +48,7 @@ async function uploadFile(jwt, ticketId) {
 async function adminUpdateStatus(adminJwt, ticketId) {
   const { data } = await axios.patch(
     `${BASE}/admin/tickets/${ticketId}/status`,
-    { status: "IN_PROGRESS", note: "Assigned to field team (demoFlow)" },
+    { status: "in_progress", note: "Assigned to field team (demoFlow)" },
     { headers: { Authorization: `Bearer ${adminJwt}` } }
   );
   return data;
@@ -117,4 +117,3 @@ main().catch((e) => {
   console.error("❌ demoFlow failed:", e.response?.data || e.message);
   process.exit(1);
 });
-
