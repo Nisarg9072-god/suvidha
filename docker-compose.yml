@@ -29,6 +29,7 @@ services:
       DEMO_OTP: "true"
       SMS_PROVIDER: "mock"
       NODE_ENV: development
+      DISABLE_OTP_RATE: "true"
     ports:
       - "5000:5000"
     depends_on:

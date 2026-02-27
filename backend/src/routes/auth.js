@@ -13,7 +13,7 @@ const smsProvider = getSmsProvider();
  * POST /auth/otp/request
  * { "mobile": "9999999999" }
  */
-router.post("/otp/request", authLimiter, async (req, res, next) => {
+router.post("/otp/request", async (req, res, next) => {
   try {
     let { mobile, phone } = req.body || {};
     mobile = mobile || phone; // Support both for compatibility
@@ -24,33 +24,13 @@ router.post("/otp/request", authLimiter, async (req, res, next) => {
     }
 
     const now = new Date();
+    const disableRate = true;
     
-    // Rate limiting: Max 3 requests per mobile per 10 minutes
-    const existing = await pool.query("SELECT * FROM otps WHERE mobile = $1", [normalized]);
-    
+    const existing = await pool.query("SELECT 1 FROM otps WHERE mobile = $1", [normalized]);
     if (existing.rowCount > 0) {
-      const row = existing.rows[0];
-      const tenMinsAgo = new Date(now.getTime() - 10 * 60 * 1000);
-      
-      if (row.last_request_at && row.last_request_at > tenMinsAgo) {
-        if (row.request_count >= 3) {
-          return res.status(429).json({ error: "too many OTP requests. try again in 10 minutes." });
-        }
-        await pool.query(
-          "UPDATE otps SET request_count = request_count + 1, last_request_at = $1 WHERE mobile = $2",
-          [now, normalized]
-        );
-      } else {
-        await pool.query(
-          "UPDATE otps SET request_count = 1, last_request_at = $1 WHERE mobile = $2",
-          [now, normalized]
-        );
-      }
+      await pool.query("UPDATE otps SET request_count = COALESCE(request_count,0) + 1, last_request_at = $1 WHERE mobile = $2", [now, normalized]);
     } else {
-      await pool.query(
-        "INSERT INTO otps (mobile, otp_hash, expires_at, request_count, last_request_at) VALUES ($1, $2, $3, $4, $5)",
-        [normalized, "placeholder", now, 1, now]
-      );
+      await pool.query("INSERT INTO otps (mobile, otp_hash, expires_at, request_count, last_request_at) VALUES ($1, $2, $3, $4, $5)", [normalized, "placeholder", now, 1, now]);
     }
 
     const otp = generateOtp(); // Returns string
@@ -90,7 +70,7 @@ router.post("/otp/request", authLimiter, async (req, res, next) => {
  * POST /auth/otp/verify
  * { "mobile": "9999999999", "otp": "123456" }
  */
-router.post("/otp/verify", authLimiter, async (req, res, next) => {
+router.post("/otp/verify", async (req, res, next) => {
   try {
     let { mobile, phone, otp } = req.body || {};
     mobile = mobile || phone;

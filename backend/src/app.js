@@ -35,7 +35,6 @@ app.use(cors());
 app.use(express.json());
 app.use(httpLogger);
 app.use(helmet());
-app.use(globalLimiter);
 
 app.get("/health", async (req, res) => {
   try {
