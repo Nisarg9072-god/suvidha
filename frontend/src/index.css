@@ -1,0 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* SUVIDHA+ Government Kiosk Design System
+   Government-grade formal design inspired by C-DAC
+   All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Government Navy Blue Theme */
+    --background: 0 0% 100%;
+    --foreground: 215 50% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 50% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 50% 15%;
+
+    /* Navy Blue - Primary Government Color */
+    --primary: 215 80% 20%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Light Gray - Secondary */
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 215 50% 15%;
+
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 20% 45%;
+
+    /* Orange/Gold Accent - Government Highlight */
+    --accent: 35 95% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 80% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 25% 85%;
+    --input: 215 25% 90%;
+    --ring: 215 80% 20%;
+
+    --radius: 0.5rem;
+
+    /* Success/Info/Warning colors */
+    --success: 145 70% 35%;
+    --success-foreground: 0 0% 100%;
+    --warning: 40 95% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 200 85% 45%;
+    --info-foreground: 0 0% 100%;
+
+    /* Navy Dark for headers */
+    --navy-dark: 215 85% 12%;
+    --navy-medium: 215 75% 25%;
+    --navy-light: 215 60% 35%;
+
+    /* Gold/Orange for CTAs */
+    --gold: 40 90% 50%;
+    --gold-dark: 35 85% 40%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 215 50% 15%;
+    --sidebar-primary: 215 80% 20%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 35 95% 50%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 215 25% 85%;
+    --sidebar-ring: 215 80% 20%;
+  }
+
+  .dark {
+    --background: 215 85% 8%;
+    --foreground: 210 30% 95%;
+
+    --card: 215 80% 12%;
+    --card-foreground: 210 30% 95%;
+
+    --popover: 215 80% 12%;
+    --popover-foreground: 210 30% 95%;
+
+    --primary: 35 95% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 60% 20%;
+    --secondary-foreground: 210 30% 95%;
+
+    --muted: 215 50% 18%;
+    --muted-foreground: 215 20% 60%;
+
+    --accent: 35 95% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 50% 25%;
+    --input: 215 50% 25%;
+    --ring: 35 95% 50%;
+
+    --success: 145 65% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 40 90% 55%;
+    --warning-foreground: 0 0% 100%;
+    --info: 200 80% 50%;
+    --info-foreground: 0 0% 100%;
+
+    --navy-dark: 215 85% 8%;
+    --navy-medium: 215 75% 18%;
+    --navy-light: 215 60% 30%;
+
+    --gold: 40 90% 50%;
+    --gold-dark: 35 85% 40%;
+
+    --sidebar-background: 215 80% 10%;
+    --sidebar-foreground: 210 30% 95%;
+    --sidebar-primary: 35 95% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 60% 20%;
+    --sidebar-accent-foreground: 210 30% 95%;
+    --sidebar-border: 215 50% 25%;
+    --sidebar-ring: 35 95% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply text-foreground font-sans antialiased;
+    font-family: 'Noto Sans', 'Poppins', system-ui, sans-serif;
+  }
+
+  /* Kiosk specific styles */
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Hide scrollbars for kiosk */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary));
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  .kiosk-container {
+    @apply min-h-screen w-full max-w-[1920px] mx-auto;
+  }
+
+  .gov-header {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .gov-accent-bar {
+    @apply h-2 bg-accent;
+  }
+
+  .touch-target {
+    @apply min-h-[56px] min-w-[56px];
+  }
+}
