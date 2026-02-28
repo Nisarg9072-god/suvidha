@@ -4,8 +4,7 @@ import { KioskHeader } from "@/components/kiosk";
 import { useAuth } from "@/hooks/useAuth";
 import { Bell, CheckCircle, CreditCard, AlertCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getNotifications, markNotificationRead } from "@/lib/api";
-import { API_URL } from "@/lib/config";
+import api, { getNotifications, markNotificationRead } from "@/lib/api";
 
 const mockNotifications = [
   { id: "mock-1", title: "Ticket Updated (Demo)", body: "Your outage report TKT-00012345 has been assigned to a technician.", is_read: false, created_at: "2026-02-25T11:45:00Z", entity_type: "ticket", entity_id: "TKT-00012345" },
@@ -38,9 +37,10 @@ const Notifications = () => {
       }
     };
     fetchNotifications();
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("kiosk_token");
     if (token) {
-      const es = new EventSource(`${API_URL}/notifications/stream?token=${encodeURIComponent(token)}`);
+      const base = (api.defaults?.baseURL as string) || (import.meta as any)?.env?.VITE_API_URL || "http://localhost:5000";
+      const es = new EventSource(`${base}/notifications/stream?token=${encodeURIComponent(token)}`);
       es.addEventListener("notification", (ev: any) => {
         try {
           const n = JSON.parse(ev.data);

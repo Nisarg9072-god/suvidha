@@ -210,6 +210,27 @@ async function patchStatus(user, id, body, actorMeta) {
     `INSERT INTO ticket_updates (ticket_id, status, note, updated_by) VALUES ($1, $2, $3, $4)`,
     [tid, to, body.reason || null, user.id]
   );
+  if (to === "resolved") {
+    try {
+      const { rows: ownerRows } = await query(`SELECT user_id FROM tickets WHERE id=$1`, [tid]);
+      if (ownerRows.length) {
+        await query(
+          `INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id)
+           VALUES ($1,'ticket_update','Ticket completed','Your ticket has been marked as completed','ticket',$2)`,
+          [ownerRows[0].user_id, tid]
+        );
+        await query(
+          `UPDATE user_sessions SET revoked=TRUE, revoked_by=$1, revoked_at=NOW() WHERE user_id=$2 AND revoked=FALSE`,
+          [user.id, ownerRows[0].user_id]
+        );
+        await query(
+          `INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id)
+           VALUES ($1,'token_revoked','Session closed','Your session has been closed after completion','token',$2)`,
+          [ownerRows[0].user_id, tid]
+        );
+      }
+    } catch (e) {}
+  }
   await query(
     `INSERT INTO ticket_events (ticket_id, action_type, performed_by, note) VALUES ($1,$2,$3,$4)`,
     [tid, 'status_changed', user.id, body.reason || null]
