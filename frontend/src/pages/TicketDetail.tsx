@@ -20,7 +20,8 @@ const TicketDetail = () => {
     const fetchDetail = async () => {
       if (!id) return;
       try {
-        const res = await getTicketDetail(id);
+        const numeric = id.match(/\d+/)?.[0] || id;
+        const res = await getTicketDetail(numeric);
         setTicket(res.data.ticket);
       } catch (err) {
         console.error("Failed to fetch ticket detail:", err);

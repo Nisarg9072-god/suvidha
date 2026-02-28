@@ -21,9 +21,12 @@ function mustInt(name) {
 const NODE_ENV = process.env.NODE_ENV || "development";
 
 const env = {
-  PORT: process.env.PORT ? mustInt("PORT") : "5100",
+  PORT: mustInt("PORT"),
   JWT_SECRET: mustString("JWT_SECRET"),
   DATABASE_URL: mustString("DATABASE_URL"),
+  ADMIN_SSE_MAX_CLIENTS: process.env.ADMIN_SSE_MAX_CLIENTS ? parseInt(process.env.ADMIN_SSE_MAX_CLIENTS, 10) : 1000,
+  ADMIN_SSE_DISTRIBUTED: process.env.ADMIN_SSE_DISTRIBUTED || "false",
+  REDIS_URL: process.env.REDIS_URL,
   PGHOST: process.env.PGHOST,
   PGPORT: process.env.PGPORT,
   PGUSER: process.env.PGUSER,

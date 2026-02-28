@@ -2,6 +2,7 @@ const { query } = require("../../config/db");
 const { ApiError } = require("../../utils/errors");
 const { emitAdminEvent } = require("./admin.stream");
 const { logAction } = require("../audit/audit.service");
+const { logAction: logAdminAudit } = require("../audit/admin_audit.service");
 
 function normalizePriority(p) {
   if (!p) return null;
@@ -209,6 +210,30 @@ async function patchStatus(user, id, body, actorMeta) {
     `INSERT INTO ticket_updates (ticket_id, status, note, updated_by) VALUES ($1, $2, $3, $4)`,
     [tid, to, body.reason || null, user.id]
   );
+  await query(
+    `INSERT INTO ticket_events (ticket_id, action_type, performed_by, note) VALUES ($1,$2,$3,$4)`,
+    [tid, 'status_changed', user.id, body.reason || null]
+  );
+  try {
+    const { rows: ownerRows } = await query(`SELECT user_id FROM tickets WHERE id=$1`, [tid]);
+    if (ownerRows.length) {
+      await query(
+        `INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id)
+         VALUES ($1,'ticket_update','Ticket status updated',$2,'ticket',$3)`,
+        [ownerRows[0].user_id, `Your ticket #${tid} is now ${to}`, tid]
+      );
+    }
+  } catch (e) {}
+  try {
+    await logAdminAudit({
+      actorId: user.id,
+      actorRole: user.role,
+      action: "TICKET_STATUS_UPDATED",
+      entityType: "ticket",
+      entityId: tid,
+      metadata: { previousStatus: from, newStatus: to, reason: body.reason || null }
+    });
+  } catch (e) {}
   await logAction({
     actor: { id: user.id, role: user.role },
     action: "ticket_status_changed",
@@ -281,6 +306,30 @@ async function patchAssign(user, id, body, actorMeta) {
     `INSERT INTO ticket_updates (ticket_id, status, note, updated_by) VALUES ($1, $2, $3, $4)`,
     [tid, nextStatus, `assigned_to:${assignedTo}`, user.id]
   );
+  await query(
+    `INSERT INTO ticket_events (ticket_id, action_type, performed_by, note) VALUES ($1,$2,$3,$4)`,
+    [tid, 'assigned', user.id, `assigned_to:${assignedTo}`]
+  );
+  try {
+    const { rows: ownerRows } = await query(`SELECT user_id FROM tickets WHERE id=$1`, [tid]);
+    if (ownerRows.length) {
+      await query(
+        `INSERT INTO notifications (user_id, type, title, message, entity_type, entity_id)
+         VALUES ($1,'assignment','Ticket assigned','Your ticket has been assigned','ticket',$2)`,
+        [ownerRows[0].user_id, tid]
+      );
+    }
+  } catch (e) {}
+  try {
+    await logAdminAudit({
+      actorId: user.id,
+      actorRole: user.role,
+      action: "TICKET_ASSIGNED",
+      entityType: "ticket",
+      entityId: tid,
+      metadata: { assignedFrom: null, assignedTo: assignedTo }
+    });
+  } catch (e) {}
   await logAction({
     actor: { id: user.id, role: user.role },
     action: "ticket_assigned",
@@ -345,6 +394,16 @@ async function createWorkOrder(user, id, body, actorMeta) {
     `INSERT INTO work_orders (ticket_id, status, notes) VALUES ($1, 'assigned', $2) RETURNING id, ticket_id, status, notes, created_at, updated_at`,
     [tid, notes]
   );
+  try {
+    await logAdminAudit({
+      actorId: user.id,
+      actorRole: user.role,
+      action: "WORK_ORDER_CREATED",
+      entityType: "ticket",
+      entityId: tid,
+      metadata: { work_order_id: rows[0].id, title: body.title, priority: body.priority || null }
+    });
+  } catch (e) {}
   await logAction({
     actor: { id: user.id, role: user.role },
     action: "work_order_created",
@@ -395,6 +454,16 @@ async function addUpdate(user, id, body, actorMeta) {
     `INSERT INTO ticket_updates (ticket_id, status, note, updated_by) VALUES ($1, $2, $3, $4)`,
     [tid, curStatus, body.message, user.id]
   );
+  try {
+    await logAdminAudit({
+      actorId: user.id,
+      actorRole: user.role,
+      action: "TICKET_INTERNAL_NOTE_ADDED",
+      entityType: "ticket",
+      entityId: tid,
+      metadata: { visibility: body.visibility || "internal" }
+    });
+  } catch (e) {}
   await logAction({
     actor: { id: user.id, role: user.role },
     action: "ticket_update_added",

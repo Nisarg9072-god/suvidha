@@ -23,7 +23,7 @@ const getLogs = asyncHandler(async (req, res) => {
   }
   if (limit !== undefined) {
     const n = parseInt(limit, 10);
-    if (Number.isNaN(n) || n < 1 || n > 200) {
+    if (Number.isNaN(n) || n < 1 || n > 100) {
       throw new ApiError("Invalid limit", 400, "VALIDATION_ERROR");
     }
   }

@@ -167,6 +167,11 @@ const CreateTicket = () => {
                     </button>
                   </div>
                 </div>
+                {form.description.trim().length > 0 && form.description.trim().length < 5 && (
+                  <div className="text-destructive text-kiosk-sm">
+                    body.description: String must contain at least 5 character(s)
+                  </div>
+                )}
                 <VirtualKeyboard
                   visible={descKeyboardOpen}
                   value={form.description}
@@ -176,7 +181,7 @@ const CreateTicket = () => {
                 label={t("descriptionLabel")}
                 />
               </div>
-              <PrimaryButton fullWidth size="large" onClick={() => setStep(1)} disabled={!form.title}>
+              <PrimaryButton fullWidth size="large" onClick={() => setStep(1)} disabled={!form.title || form.description.trim().length < 5}>
                 {t("next")}
               </PrimaryButton>
             </div>

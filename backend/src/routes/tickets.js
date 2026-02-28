@@ -92,12 +92,24 @@ router.post("/", requireAuth, validate(createTicketSchema), async (req, res, nex
   }
 });
 
-router.get("/", requireAuth, async (req, res) => {
-  const r = await pool.query(
-    `SELECT * FROM tickets WHERE user_id=$1 ORDER BY created_at DESC`,
-    [req.user.id]
-  );
-  res.json({ ok: true, tickets: r.rows });
+router.get("/", requireAuth, async (req, res, next) => {
+  try {
+    const r = await pool.query(
+      `SELECT t.*, d.code AS department_code 
+       FROM tickets t 
+       LEFT JOIN departments d ON d.id = t.department_id 
+       WHERE t.user_id=$1 
+       ORDER BY t.created_at DESC`,
+      [req.user.id]
+    );
+    const items = r.rows.map((row) => ({
+      ...row,
+      departmentCode: row.department_code || null,
+    }));
+    res.json({ ok: true, tickets: items });
+  } catch (e) {
+    next(e);
+  }
 });
 
 router.get("/:id", requireAuth, async (req, res, next) => {

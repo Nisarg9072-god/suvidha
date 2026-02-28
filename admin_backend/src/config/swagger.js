@@ -29,6 +29,21 @@ const swaggerSpec = {
         responses: { "200": { description: "ok" } }
       }
     },
+    "/live": {
+      get: {
+        tags: ["Health"],
+        responses: { "200": { description: "ok" } }
+      }
+    },
+    "/ready": {
+      get: {
+        tags: ["Health"],
+        responses: {
+          "200": { description: "ready" },
+          "503": { description: "not ready" }
+        }
+      }
+    },
     "/auth/me": {
       get: {
         tags: ["Auth"],
@@ -72,7 +87,20 @@ const swaggerSpec = {
       get: {
         tags: ["Audit"],
         security: [{ BearerAuth: [] }],
-        responses: { "200": { description: "ok" } }
+        parameters: [
+          { name: "actor_id", in: "query", schema: { type: "integer" } },
+          { name: "action", in: "query", schema: { type: "string" } },
+          { name: "entity_type", in: "query", schema: { type: "string" } },
+          { name: "from", in: "query", schema: { type: "string", format: "date-time" } },
+          { name: "to", in: "query", schema: { type: "string", format: "date-time" } },
+          { name: "page", in: "query", schema: { type: "integer", minimum: 1 } },
+          { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 100 } }
+        ],
+        responses: {
+          "200": { description: "ok" },
+          "401": { description: "Unauthorized" },
+          "403": { description: "Forbidden" }
+        }
       }
     },
     "/admin/audit/logs": {
@@ -121,6 +149,16 @@ const swaggerSpec = {
       get: {
         tags: ["Admin"],
         security: [{ BearerAuth: [] }],
+        parameters: [
+          { name: "page", in: "query", schema: { type: "integer", minimum: 1 }, description: "Page number (default 1)" },
+          { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 100 }, description: "Items per page (default 20, max 100)" },
+          { name: "status", in: "query", schema: { type: "string", enum: ["open","in_progress","resolved","rejected"] } },
+          { name: "departmentCode", in: "query", schema: { type: "string", enum: ["GAS","ELEC","MUNI"] } },
+          { name: "priority", in: "query", schema: { type: "string", enum: ["LOW","MEDIUM","HIGH","EMERGENCY"] } },
+          { name: "area", in: "query", schema: { type: "string" } },
+          { name: "assigned_to", in: "query", schema: { type: "integer" } },
+          { name: "q", in: "query", schema: { type: "string" } }
+        ],
         responses: { "200": { description: "ok" } }
       }
     },
@@ -296,6 +334,45 @@ const swaggerSpec = {
         description: "SSE stream of admin ticket events",
         responses: {
           "200": { description: "SSE stream" }
+        }
+      }
+    },
+    "/metrics-lite": {
+      get: {
+        tags: ["Health"],
+        security: [{ BearerAuth: [] }],
+        description: "Operational metrics (admin only)",
+        responses: {
+          "200": {
+            description: "ok",
+            content: {
+              "application/json": {
+                example: {
+                  ok: true,
+                  service: "admin_backend",
+                  requestId: "abc-123",
+                  uptimeSec: 1234,
+                  memory: { rss: 12345678, heapUsed: 9876543, heapTotal: 12345678 },
+                  activeSseClients: 2,
+                  nodeVersion: "v18.20.8"
+                }
+              }
+            }
+          },
+          "401": { description: "Unauthorized" },
+          "403": { description: "Forbidden" }
+        }
+      }
+    },
+    "/metrics": {
+      get: {
+        tags: ["Health"],
+        security: [{ BearerAuth: [] }],
+        description: "Prometheus metrics (admin only)",
+        responses: {
+          "200": { description: "text/plain Prometheus format" },
+          "401": { description: "Unauthorized" },
+          "403": { description: "Forbidden" }
         }
       }
     }

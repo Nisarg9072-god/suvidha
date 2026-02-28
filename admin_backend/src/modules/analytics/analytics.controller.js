@@ -21,6 +21,17 @@ const overview = asyncHandler(async (req, res) => {
     throw new ApiError("Invalid date range", 400, "VALIDATION_ERROR");
   }
   const r = await service.overview(req.user, { from, to, departmentCode });
+  try {
+    const adminAudit = require("../audit/admin_audit.service");
+    await adminAudit.logAction({
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      action: "ANALYTICS_VIEWED",
+      entityType: "analytics",
+      entityId: null,
+      metadata: { kind: "overview", from, to, departmentCode }
+    });
+  } catch (e) {}
   res.json(r);
 });
 
@@ -40,6 +51,17 @@ const areas = asyncHandler(async (req, res) => {
     throw new ApiError("Invalid status", 400, "VALIDATION_ERROR");
   }
   const r = await service.areas(req.user, { from, to, departmentCode, top, status });
+  try {
+    const adminAudit = require("../audit/admin_audit.service");
+    await adminAudit.logAction({
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      action: "ANALYTICS_VIEWED",
+      entityType: "analytics",
+      entityId: null,
+      metadata: { kind: "areas", from, to, departmentCode, top, status }
+    });
+  } catch (e) {}
   res.json(r);
 });
 
@@ -59,6 +81,17 @@ const hotspots = asyncHandler(async (req, res) => {
     throw new ApiError("Invalid status", 400, "VALIDATION_ERROR");
   }
   const r = await service.hotspots(req.user, { from, to, departmentCode, top, status });
+  try {
+    const adminAudit = require("../audit/admin_audit.service");
+    await adminAudit.logAction({
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      action: "ANALYTICS_VIEWED",
+      entityType: "analytics",
+      entityId: null,
+      metadata: { kind: "hotspots", from, to, departmentCode, top, status }
+    });
+  } catch (e) {}
   res.json(r);
 });
 

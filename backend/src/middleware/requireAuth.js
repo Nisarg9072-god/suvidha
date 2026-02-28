@@ -1,7 +1,9 @@
 
 const { verifyToken } = require("../utils/jwt");
+const { pool } = require("../db");
+const crypto = require("crypto");
 
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   let token = "";
   const header = req.headers.authorization || "";
   
@@ -17,6 +19,17 @@ function requireAuth(req, res, next) {
   try {
     const decoded = verifyToken(token);
     req.user = decoded; // { id, phone, role }
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const r = await pool.query(
+      `SELECT revoked FROM user_sessions WHERE user_id=$1 AND token_hash=$2`,
+      [decoded.id, tokenHash]
+    );
+    if (r.rowCount === 0) {
+      return res.status(401).json({ error: "Session not found" });
+    }
+    if (r.rows[0].revoked) {
+      return res.status(401).json({ error: "Token revoked" });
+    }
     next();
   } catch (e) {
     return res.status(401).json({ error: "Invalid/expired token" });

@@ -1,8 +1,12 @@
-const { pool } = require("../../config/db");
+const { query } = require("../../config/db");
 const env = require("../../config/env");
+const runtime = require("../../state/runtime");
+const metrics = require("../../utils/metrics");
+const redisBus = require("./admin.redis");
 
 let seq = 0;
 const clients = new Map();
+const maxClients = Number(env.ADMIN_SSE_MAX_CLIENTS || 1000);
 
 function nextId() {
   seq += 1;
@@ -23,13 +27,21 @@ function safeWrite(res, type, data) {
 }
 
 function addClient(res, user) {
+  if (runtime.getShuttingDown()) {
+    return null;
+  }
+  if (clients.size >= maxClients) {
+    return null;
+  }
   const id = nextId();
   clients.set(id, { res, user, connectedAt: Date.now() });
+  try { metrics.setSseClients(clients.size); } catch (e) {}
   return id;
 }
 
 function removeClient(id) {
   clients.delete(id);
+  try { metrics.setSseClients(clients.size); } catch (e) {}
 }
 
 function shouldReceive(client, meta) {
@@ -66,7 +78,11 @@ function emitAdminEvent(type, payload) {
     department_id: payload.department_id || null,
     assigned_to: payload.assigned_to || null
   };
-  broadcastEvent(type, payload, meta);
+  if (redisBus.isEnabled() && redisBus.isHealthy()) {
+    redisBus.publishAdminEvent(type, payload);
+  } else {
+    broadcastEvent(type, payload, meta);
+  }
   return true;
 }
 
@@ -87,7 +103,7 @@ function startPollerIfEnabled() {
         ORDER BY created_at ASC
         LIMIT 50
       `;
-      const { rows } = await pool.query(sql, [pollLastSeen]);
+      const { rows } = await query(sql, [pollLastSeen]);
       for (const r of rows) {
         emitAdminEvent("ticket_created", {
           ticketId: r.id,
@@ -108,6 +124,14 @@ function startPollerIfEnabled() {
 
 function initAdminStream() {
   startPollerIfEnabled();
+  try {
+    redisBus.init().then(() => {
+      redisBus.onAdminEvent((type, payload) => {
+        const meta = { department_id: payload.department_id || null, assigned_to: payload.assigned_to || null };
+        broadcastEvent(type, payload, meta);
+      });
+    }).catch(() => {});
+  } catch (e) {}
   return { init: true };
 }
 
@@ -123,7 +147,20 @@ function shutdownStream() {
       } catch (e) {}
       clients.delete(id);
     }
+    try { metrics.setSseClients(0); } catch (e) {}
   } catch (e) {}
 }
 
-module.exports = { initAdminStream, emitAdminEvent, addClient, removeClient, safeWrite, shutdownStream };
+function getClientCount() {
+  try {
+    return clients.size;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function isOverCapacity() {
+  return clients.size >= maxClients;
+}
+
+module.exports = { initAdminStream, emitAdminEvent, addClient, removeClient, safeWrite, shutdownStream, getClientCount, isOverCapacity };

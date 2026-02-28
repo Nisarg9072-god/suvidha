@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Bell, CheckCircle, CreditCard, AlertCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNotifications, markNotificationRead } from "@/lib/api";
+import { API_URL } from "@/lib/config";
 
 const mockNotifications = [
   { id: "mock-1", title: "Ticket Updated (Demo)", body: "Your outage report TKT-00012345 has been assigned to a technician.", is_read: false, created_at: "2026-02-25T11:45:00Z", entity_type: "ticket", entity_id: "TKT-00012345" },
@@ -37,6 +38,22 @@ const Notifications = () => {
       }
     };
     fetchNotifications();
+    const token = localStorage.getItem("token");
+    if (token) {
+      const es = new EventSource(`${API_URL}/notifications/stream?token=${encodeURIComponent(token)}`);
+      es.addEventListener("notification", (ev: any) => {
+        try {
+          const n = JSON.parse(ev.data);
+          setNotifications((prev) => [{ ...n, body: n.message }, ...prev]);
+        } catch (_) {}
+      });
+      es.addEventListener("snapshot", (ev: any) => {
+        // can be used to prime badge count elsewhere if needed
+      });
+      es.addEventListener("ping", () => {});
+      es.onerror = () => { /* keep alive */ };
+      return () => { es.close(); };
+    }
   }, []);
 
   const handleTap = async (n: any) => {
@@ -55,7 +72,12 @@ const Notifications = () => {
     }
 
     // Navigate to entity
-    if (n.entity_type === "ticket") navigate(`/tickets/${n.entity_id}`);
+    if (n.entity_type === "ticket") {
+      const idStr = String(n.entity_id || "");
+      const numeric = idStr.match(/\d+/)?.[0];
+      if (numeric) navigate(`/tickets/${numeric}`);
+      else navigate("/tickets");
+    }
     else if (n.entity_type === "bill") navigate("/bills");
   };
 

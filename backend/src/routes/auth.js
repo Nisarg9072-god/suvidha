@@ -8,6 +8,8 @@ const { getSmsProvider } = require("../utils/sms");
 const router = express.Router();
 const { authLimiter } = require("../middleware/rateLimit");
 const smsProvider = getSmsProvider();
+const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 
 /**
  * POST /auth/otp/request
@@ -129,6 +131,19 @@ router.post("/otp/verify", async (req, res, next) => {
 
     // Issue JWT
     const token = signToken({ id: user.id, phone: user.phone, role: user.role });
+    // Store session (hashed token)
+    try {
+      const decoded = jwt.decode(token);
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      await pool.query(
+        `INSERT INTO user_sessions (user_id, token_hash, issued_at, expires_at, revoked)
+         VALUES ($1,$2,NOW(),TO_TIMESTAMP($3),FALSE)
+         ON CONFLICT (token_hash) DO NOTHING`,
+        [user.id, tokenHash, decoded?.exp || Math.floor(Date.now() / 1000) + 7200]
+      );
+    } catch (e) {
+      console.error("session store error:", e?.message);
+    }
     
     try {
       await audit(req, { 

@@ -1,12 +1,11 @@
 const express = require("express");
 const { getAudit, getLogs } = require("./audit.controller");
 const auth = require("../../middlewares/auth");
-const { authorize } = require("../../middlewares/authorize");
-const { PERMISSIONS } = require("../../config/permissions");
+const { requireAnyRole } = require("../../middlewares/roleGuard");
 
 const router = express.Router();
 
-router.get("/", auth, authorize(PERMISSIONS.AUDIT_VIEW), getAudit);
-router.get("/logs", auth, authorize(PERMISSIONS.AUDIT_VIEW), getLogs);
+router.get("/", auth, requireAnyRole(["admin"]), getAudit);
+router.get("/logs", auth, requireAnyRole(["admin"]), getLogs);
 
 module.exports = router;

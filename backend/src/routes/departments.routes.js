@@ -13,5 +13,15 @@ router.get("/departments", async (req, res, next) => {
   }
 });
 
+// Admin alias for departments list
+router.get("/admin/departments", async (req, res, next) => {
+  try {
+    const r = await pool.query("SELECT id, code, name FROM departments ORDER BY id");
+    res.json(r.rows);
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;
 

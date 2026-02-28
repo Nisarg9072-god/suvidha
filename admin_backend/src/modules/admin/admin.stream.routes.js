@@ -1,17 +1,27 @@
 const express = require("express");
-const { addClient, removeClient, safeWrite } = require("./admin.stream");
+const { addClient, removeClient, safeWrite, isOverCapacity } = require("./admin.stream");
+const runtime = require("../../state/runtime");
 const { sseLimiter } = require("../../middlewares/rateLimit");
 
 const router = express.Router();
 
 router.get("/tickets", sseLimiter, (req, res) => {
   try {
+    if (runtime.getShuttingDown()) {
+      return res.status(503).json({ ok: false, error: "server_shutting_down" });
+    }
+    if (isOverCapacity()) {
+      return res.status(503).json({ ok: false, error: "sse_over_capacity" });
+    }
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
     res.setHeader("X-Accel-Buffering", "no");
     res.write("retry: 3000\n");
     const clientId = addClient(res, req.user);
+    if (!clientId) {
+      return res.status(503).json({ ok: false, error: "sse_unavailable" });
+    }
     safeWrite(res, "connected", { ok: true, clientId, role: req.user.role, department_id: req.user.department_id || null, ts: Date.now() });
     const hb = setInterval(() => {
       safeWrite(res, "heartbeat", { ts: Date.now() });

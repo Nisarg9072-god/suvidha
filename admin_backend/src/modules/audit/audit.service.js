@@ -9,6 +9,11 @@ async function list(params) {
     where.push(`action = $${values.length}`);
   }
 
+  if (params.entity_type) {
+    values.push(params.entity_type);
+    where.push(`entity_type = $${values.length}`);
+  }
+
   if (params.actor_id) {
     values.push(parseInt(params.actor_id, 10));
     where.push(`actor_id = $${values.length}`);
@@ -92,7 +97,7 @@ async function queryLogs(params) {
     values.push(parseInt(params.department_id, 10));
     where.push(`department_id = $${values.length}`);
   }
-  const limit = Math.min(Math.max(parseInt(params.limit || "50", 10), 1), 200);
+  const limit = Math.min(Math.max(parseInt(params.limit || "20", 10), 1), 100);
   const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
   const { rows } = await query(
     `SELECT id, actor_id, actor_role, action, entity_type, entity_id, department_id, metadata, ip_address, user_agent, created_at

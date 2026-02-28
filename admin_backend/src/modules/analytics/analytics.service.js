@@ -1,4 +1,6 @@
 const { query } = require("../../config/db");
+const cache = require("../../utils/simpleCache");
+const logger = require("../../utils/logger");
 
 function parseRange(params) {
   const out = {};
@@ -41,6 +43,9 @@ function buildFilters(user, params) {
 
 async function overview(user, params) {
   const { whereSql, values, range } = buildFilters(user, params);
+  const key = `overview:${user.role}:${user.department_id || "none"}:${JSON.stringify(params)}`;
+  const hit = cache.get(key);
+  if (hit) { try { logger.info("cache_hit", { route: "overview" }); } catch (e) {} return hit; }
   const sql = `
     SELECT
       COUNT(*)::bigint AS tickets_total,
@@ -56,9 +61,12 @@ async function overview(user, params) {
     LEFT JOIN departments d ON d.id = t.department_id
     ${whereSql}
   `;
+  if (process.env.ADMIN_DEBUG_SLOW === "true") {
+    try { await query("SELECT pg_sleep(0.4)"); } catch (e) {}
+  }
   const { rows } = await query(sql, values);
   const r = rows[0] || {};
-  return {
+  const out = {
     ok: true,
     range: { from: range.from || null, to: range.to || null },
     totals: {
@@ -72,11 +80,16 @@ async function overview(user, params) {
       avg_resolution_hours: r.avg_resolution_hours !== null ? Number(r.avg_resolution_hours) : null
     }
   };
+  cache.set(key, out, 30000);
+  return out;
 }
 
 async function areas(user, params) {
   const top = Math.min(Math.max(parseInt(params.top || "20", 10), 1), 100);
   const { whereSql, values } = buildFilters(user, params);
+  const key = `areas:${user.role}:${user.department_id || "none"}:${JSON.stringify(params)}`;
+  const hit = cache.get(key);
+  if (hit) { try { logger.info("cache_hit", { route: "areas" }); } catch (e) {} return hit; }
   const sql = `
     SELECT
       COALESCE(t.area, 'Unknown') AS area,
@@ -94,12 +107,17 @@ async function areas(user, params) {
     LIMIT $${values.length + 1}
   `;
   const { rows } = await query(sql, [...values, top]);
-  return { ok: true, items: rows };
+  const out = { ok: true, items: rows };
+  cache.set(key, out, 30000);
+  return out;
 }
 
 async function hotspots(user, params) {
   const top = Math.min(Math.max(parseInt(params.top || "20", 10), 1), 100);
   const { whereSql, values } = buildFilters(user, params);
+  const key = `hotspots:${user.role}:${user.department_id || "none"}:${JSON.stringify(params)}`;
+  const hit = cache.get(key);
+  if (hit) { try { logger.info("cache_hit", { route: "hotspots" }); } catch (e) {} return hit; }
   const latLngFilter = `t.latitude IS NOT NULL AND t.longitude IS NOT NULL`;
   const whereWithLatLng = whereSql
   ? `${whereSql} AND ${latLngFilter}`
@@ -120,7 +138,9 @@ async function hotspots(user, params) {
     LIMIT $${values.length + 1}
   `;
   const { rows } = await query(sql, [...values, top]);
-  return { ok: true, items: rows };
+  const out = { ok: true, items: rows };
+  cache.set(key, out, 30000);
+  return out;
 }
 
 module.exports = { overview, areas, hotspots };

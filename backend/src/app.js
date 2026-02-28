@@ -27,6 +27,8 @@ const workOrdersRoutes = require("./routes/workorders.routes");
 const billTypesRoutes = require("./routes/billtypes.routes");
 const deptAdminRoutes = require("./routes/deptadmin.routes");
 const servicesRoutes = require("./routes/services.routes");
+const ticketEventsRoutes = require("./routes/ticketEvents.routes");
+const notificationsStreamRoutes = require("./routes/notifications.stream.routes");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./docs/swagger");
 
@@ -67,6 +69,8 @@ app.use("/", workOrdersRoutes);
 app.use("/", billTypesRoutes);
 app.use("/", deptAdminRoutes);
 app.use("/", servicesRoutes);
+app.use("/", ticketEventsRoutes);
+app.use("/", notificationsStreamRoutes);
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const errorHandler = require("./middleware/errorHandler");
