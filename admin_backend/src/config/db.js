@@ -3,18 +3,33 @@ const env = require("./env");
 const logger = require("../utils/logger");
 const metrics = require("../utils/metrics");
 
-console.log("ADMIN DATABASE URL:", process.env.DATABASE_URL);
+function buildSslConfig() {
+  const forceSsl =
+    process.env.PGSSLMODE === "require" ||
+    process.env.DB_SSL === "true" ||
+    env.NODE_ENV === "production";
+
+  if (!forceSsl) return undefined;
+  return { rejectUnauthorized: false };
+}
 
 function createPool() {
+  const ssl = buildSslConfig();
+
   if (env.DATABASE_URL) {
-    return new Pool({ connectionString: env.DATABASE_URL });
+    return new Pool({
+      connectionString: env.DATABASE_URL,
+      ssl
+    });
   }
+
   return new Pool({
     host: env.PGHOST,
     port: env.PGPORT ? parseInt(env.PGPORT, 10) : undefined,
     user: env.PGUSER,
     password: env.PGPASSWORD,
-    database: env.PGDATABASE
+    database: env.PGDATABASE,
+    ssl
   });
 }
 

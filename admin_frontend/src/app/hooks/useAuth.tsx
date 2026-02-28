@@ -22,13 +22,24 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<BackendUser | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('token') || localStorage.getItem('admin_token');
+  });
+  const [user, setUser] = useState<BackendUser | null>(() => {
+    const u = localStorage.getItem('user') || localStorage.getItem('admin_user');
+    return u ? (JSON.parse(u) as BackendUser) : null;
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    const t = localStorage.getItem('token') || localStorage.getItem('admin_token');
+    return !!t;
+  });
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
+    const t = localStorage.getItem('token') || localStorage.getItem('admin_token');
+    setToken(t);
+    if (!t) {
       setUser(null);
+      setLoading(false);
       return;
     }
     const loadMe = async () => {
@@ -37,16 +48,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const res = await adminApi.get('/auth/me');
         const u = res.data?.user as BackendUser;
         if (u && u.role) {
+          localStorage.setItem('user', JSON.stringify(u));
           localStorage.setItem('admin_user', JSON.stringify(u));
           setUser(u);
         } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
           localStorage.removeItem('admin_token');
           localStorage.removeItem('admin_user');
+          setToken(null);
           setUser(null);
         }
       } catch (_) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_user');
+        setToken(null);
         setUser(null);
       } finally {
         setLoading(false);
@@ -66,20 +84,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const msg = res?.data?.error?.message || 'Authentication failed';
       throw new Error(String(msg));
     }
+    localStorage.setItem('token', token);
     localStorage.setItem('admin_token', token);
+    setToken(token);
     const me = await adminApi.get('/auth/me');
     const u = me.data?.user as BackendUser;
     if (!u || !u.role) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user');
+      setToken(null);
       throw new Error('Invalid user payload');
     }
+    localStorage.setItem('user', JSON.stringify(u));
     localStorage.setItem('admin_user', JSON.stringify(u));
     setUser(u);
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
+    setToken(null);
     setUser(null);
   };
 
@@ -87,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: !!token,
         loading,
         requestOtp,
         login,

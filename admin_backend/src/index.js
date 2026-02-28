@@ -7,8 +7,10 @@ const runtime = require("./state/runtime");
 const { randomUUID } = require("crypto");
 const redisBus = require("./modules/admin/admin.redis");
 
-const server = app.listen(parseInt(env.PORT, 10), () => {
-  logger.info("admin backend up", { port: env.PORT });
+const port = parseInt(process.env.PORT || env.PORT || "5001", 10);
+
+const server = app.listen(port, () => {
+  logger.info("admin backend up", { port });
 });
 
 runtime.setInstanceId(randomUUID());

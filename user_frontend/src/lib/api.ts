@@ -1,4 +1,4 @@
-import axios, { type AxiosRequestConfig, type AxiosResponse, type AxiosError, type RawAxiosRequestHeaders } from "axios";
+import axios, { type AxiosResponse, type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -7,10 +7,10 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-api.interceptors.request.use((config: AxiosRequestConfig) => {
-  const token = localStorage.getItem("kiosk_token");
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = localStorage.getItem("token") || localStorage.getItem("kiosk_token");
   if (token) {
-    const headers: RawAxiosRequestHeaders = (config.headers as RawAxiosRequestHeaders) || {};
+    const headers = (config.headers as any) || {};
     headers.Authorization = `Bearer ${token}`;
     config.headers = headers;
   }
@@ -21,6 +21,8 @@ api.interceptors.response.use(
   (res: AxiosResponse) => res,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
       localStorage.removeItem("kiosk_token");
       localStorage.removeItem("kiosk_user");
       window.location.href = "/login";

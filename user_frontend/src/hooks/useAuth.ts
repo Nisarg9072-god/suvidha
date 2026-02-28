@@ -15,15 +15,19 @@ const INACTIVITY_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 const BLOCKED_ROLES = ["admin", "staff", "dept_admin"];
 
 export function useAuth() {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("kiosk_token"));
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem("token") || localStorage.getItem("kiosk_token");
+  });
   const [user, setUser] = useState<KioskUser | null>(() => {
-    const u = localStorage.getItem("kiosk_user");
+    const u = localStorage.getItem("user") || localStorage.getItem("kiosk_user");
     return u ? JSON.parse(u) : null;
   });
 
   const navigate = useNavigate();
 
   const logout = useCallback(() => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     localStorage.removeItem("kiosk_token");
     localStorage.removeItem("kiosk_user");
     setToken(null);
@@ -37,6 +41,8 @@ export function useAuth() {
         alert("Access denied. This kiosk is for citizens only.");
         return false;
       }
+      localStorage.setItem("token", newToken);
+      localStorage.setItem("user", JSON.stringify(newUser));
       localStorage.setItem("kiosk_token", newToken);
       localStorage.setItem("kiosk_user", JSON.stringify(newUser));
       setToken(newToken);
@@ -50,6 +56,7 @@ export function useAuth() {
     setUser((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, ...partial };
+      localStorage.setItem("user", JSON.stringify(updated));
       localStorage.setItem("kiosk_user", JSON.stringify(updated));
       return updated;
     });

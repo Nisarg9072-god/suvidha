@@ -6,7 +6,7 @@ type Role = 'admin' | 'dept_admin' | 'staff';
 export default function ProtectedRoute({ allowedRoles }: { allowedRoles?: Role[] } = {}) {
   const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
-  const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
+  const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('admin_token')) : null;
 
   if (!token) {
     return <Navigate to="/login" replace state={{ from: location }} />;

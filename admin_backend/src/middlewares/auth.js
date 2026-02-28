@@ -24,7 +24,9 @@ module.exports = async (req, res, next) => {
   }
   try {
     const token = parts[1];
-    try { console.log("ADMIN JWT SECRET LEN:", (env.JWT_SECRET || "").length); } catch (e) {}
+    if (process.env.NODE_ENV !== "production") {
+      try { console.log("ADMIN JWT SECRET LEN:", (env.JWT_SECRET || "").length); } catch (e) {}
+    }
     const payload = jwt.verify(token, env.JWT_SECRET);
     req.user = { id: pickId(payload), role: pickRole(payload), department_id: pickDept(payload) };
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");

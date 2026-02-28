@@ -27,7 +27,7 @@ export const adminApi = axios.create({
 });
 
 function attachAuth(config: any) {
-  const token = localStorage.getItem('admin_token');
+  const token = localStorage.getItem('token') || localStorage.getItem('admin_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -39,6 +39,8 @@ adminApi.interceptors.request.use(attachAuth, (error) => Promise.reject(error));
 
 function handleResponseError(error: any) {
   if (error.response?.status === 401) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
     window.location.href = '/login';
